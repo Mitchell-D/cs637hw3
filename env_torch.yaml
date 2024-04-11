@@ -1,0 +1,10 @@
+name: torch
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+dependencies:
+  - pytorch
+  - torchvision
+  - matplotlib
+  - numpy
