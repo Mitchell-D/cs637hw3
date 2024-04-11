@@ -120,6 +120,8 @@ def main():
     else:
         device = torch.device("cpu")
 
+    print(use_cuda)
+
     train_kwargs = {'batch_size': args.batch_size}
     test_kwargs = {'batch_size': args.test_batch_size}
     if use_cuda:
