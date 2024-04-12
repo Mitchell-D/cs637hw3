@@ -11,14 +11,6 @@ import matplotlib.pyplot as plt
 
 from models import Net,CNNNet
 
-# Check if CUDA is available
-train_on_gpu = torch.cuda.is_available()
-
-if train_on_gpu:
-    print("CUDA is available! Training on GPU...")
-else:
-    print("CUDA is not available. Training on CPU...")
-
 # Number of subprocesses to use for data loading
 num_workers = 0
 
@@ -33,9 +25,9 @@ n_valid = 0.2
 transform = transforms.Compose([
     transforms.RandomHorizontalFlip(), # randomly flip and rotate
     transforms.RandomRotation(10),
-                                transforms.ToTensor(),
-                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-                               ])
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
 
 # Select training_set and testing_set
 train_data = datasets.CIFAR10("data",
@@ -55,36 +47,40 @@ np.random.shuffle(indices)
 split = int(np.floor(n_valid * n_train))
 train_idx, valid_idx = indices[split:], indices[:split]
 
-# Define samplers for obtaining training and validation
-train_sampler = SubsetRandomSampler(train_idx)
-valid_sampler = SubsetRandomSampler(valid_idx)
-
 # Prepare data loaders (combine dataset and sampler)
-train_loader = torch.utils.data.DataLoader(train_data,
-                                           batch_size = batch_size,
-                                          sampler = train_sampler,
-                                          num_workers = num_workers)
+train_loader = torch.utils.data.DataLoader(
+        train_data,
+        batch_size=batch_size,
+        sampler=SubsetRandomSampler(train_idx),
+        num_workers=num_workers
+        )
 
-valid_loader = torch.utils.data.DataLoader(train_data,
-                                           batch_size = batch_size,
-                                          sampler = valid_sampler,
-                                          num_workers = num_workers)
-
-test_loader = torch.utils.data.DataLoader(test_data,
-                                           batch_size = batch_size,
-                                          num_workers = num_workers)
+valid_loader = torch.utils.data.DataLoader(
+        train_data,
+        batch_size=batch_size,
+        sampler=SubsetRandomSampler(valid_idx),
+        num_workers=num_workers
+        )
+test_loader = torch.utils.data.DataLoader(
+        test_data,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        )
 
 # Specify the image classes
 classes = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog",
           "horse", "ship", "truck"]
 
-
 model = CNNNet()
 print(model)
 
 # Move tensors to GPU is CUDA is available
+train_on_gpu = torch.cuda.is_available()
 if train_on_gpu:
+    print("CUDA is available! Training on GPU...")
     model.cuda()
+else:
+    print("CUDA is not available. Training on CPU...")
 
 # Specify the Loss function
 criterion = nn.CrossEntropyLoss()
@@ -113,11 +109,11 @@ for epoch in range(1, n_epochs+1):
             data, target = data.cuda(), target.cuda()
         # clear the gradients of all optimized variables
         optimizer.zero_grad()
-        # forward pass: compute predicted outputs by passing inputs to the model
+        # forward: compute predicted outputs by passing inputs to the model
         output = model(data)
         # calculate the batch loss
         loss = criterion(output, target)
-        # backward pass: compute gradient of the loss with respect to model parameters
+        # backward pass: compute the loss gradient with respect to parameters
         loss.backward()
         # perform a single optimization step (parameter update)
         optimizer.step()
@@ -132,7 +128,7 @@ for epoch in range(1, n_epochs+1):
         # move tensors to GPU if CUDA is available
         if train_on_gpu:
             data, target = data.cuda(), target.cuda()
-        # forward pass: compute predicted outputs by passing inputs to the model
+        # forward: compute predicted outputs by passing inputs to the model
         output = model(data)
         # calculate the batch loss
         loss = criterion(output, target)
@@ -144,14 +140,14 @@ for epoch in range(1, n_epochs+1):
     valid_loss = valid_loss/len(valid_loader.dataset)
 
     # print training/validation statistics
-    print('Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'.format(
-        epoch, train_loss, valid_loss))
+    printstr = 'Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'
+    print(printstr.format(epoch, train_loss, valid_loss))
 
     # save model if validation loss has decreased
     if valid_loss <= valid_loss_min:
-        print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
-        valid_loss_min,
-        valid_loss))
+        printstr = 'Validation loss decreased ({:.6f} --> {:.6f}).  " + \
+                "Saving model ...'
+        print(printstr.format(valid_loss_min, valid_loss))
         torch.save(model.state_dict(), 'model_cifar.pt')
         valid_loss_min = valid_loss
 
@@ -178,7 +174,8 @@ for data, target in test_loader:
     _, pred = torch.max(output, 1)
     # compare predictions to true label
     correct_tensor = pred.eq(target.data.view_as(pred))
-    correct = np.squeeze(correct_tensor.numpy()) if not train_on_gpu else np.squeeze(correct_tensor.cpu().numpy())
+    correct = np.squeeze(correct_tensor.numpy()) if not train_on_gpu \
+            else np.squeeze(correct_tensor.cpu().numpy())
     # calculate test accuracy for each object class
     for i in range(batch_size):
         label = target.data[i]
@@ -195,7 +192,7 @@ for i in range(10):
             classes[i], 100 * class_correct[i] / class_total[i],
             np.sum(class_correct[i]), np.sum(class_total[i])))
     else:
-        print('Test Accuracy of %5s: N/A (no training examples)' % (classes[i]))
+        print('Test Accuracy of %5s: N/A (no training examples)'%(classes[i]))
 
 print('\nTest Accuracy (Overall): %2d%% (%2d/%2d)' % (
     100. * np.sum(class_correct) / np.sum(class_total),
