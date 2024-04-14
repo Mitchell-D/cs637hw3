@@ -30,15 +30,10 @@ transform = transforms.Compose([
     ])
 
 # Select training_set and testing_set
-train_data = datasets.CIFAR10("data",
-                              train= True,
-                             download=True,
-                             transform = transform)
-
-test_data = datasets.CIFAR10("data",
-                              train= False,
-                             download=True,
-                             transform = transform)
+train_data = datasets.CIFAR10(
+        "data", train= True, download=True, transform=transform)
+test_data = datasets.CIFAR10(
+        "data", train= False, download=True, transform=transform)
 
 # Get indices for training_set and validation_set
 n_train = len(train_data)
@@ -143,6 +138,7 @@ for epoch in range(1, n_epochs+1):
     printstr = 'Epoch: {} \tTraining Loss: {:.6f} \tValidation Loss: {:.6f}'
     print(printstr.format(epoch, train_loss, valid_loss))
 
+    #'''
     # save model if validation loss has decreased
     if valid_loss <= valid_loss_min:
         printstr = 'Validation loss decreased ({:.6f} --> {:.6f}).  " + \
@@ -150,6 +146,9 @@ for epoch in range(1, n_epochs+1):
         print(printstr.format(valid_loss_min, valid_loss))
         torch.save(model.state_dict(), 'model_cifar.pt')
         valid_loss_min = valid_loss
+    #'''
+    torch.save(model.state_dict(),
+               f'data/models/cifar10/model_cifar_{epoch:02}.pt')
 
 model.load_state_dict(torch.load('model_cifar.pt'))
 

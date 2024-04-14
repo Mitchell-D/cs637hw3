@@ -6,10 +6,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
+import pickle as pkl
 
-from models import Net
+from models import Net, SaveOutput
 
-def train(args, model, device, train_loader, optimizer, epoch):
+def train(args, model, device, train_loader, optimizer, epoch,
+          save_per_epoch=False):
     """
     1. Unpack the next batch's index and the feature/label values
     2. Buffer the batch data on the requested device
@@ -99,8 +101,8 @@ def main():
             '--dry-run', action='store_true', default=False,
             help='quickly check a single pass')
     parser.add_argument(
-            '--seed', type=int, default=1, metavar='S',
-            help='random seed (default: 1)')
+            '--seed', type=int, default=20000722, metavar='S',
+            help='random seed (default: 20000722)')
     parser.add_argument(
             '--log-interval', type=int, default=10, metavar='N',
             help='batches to wait between logging entries')
@@ -140,7 +142,10 @@ def main():
     train_loader = torch.utils.data.DataLoader(dataset1,**train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
-    model = Net().to(device)
+    model = Net()
+    #out_hook = SaveOutput() ## class for saving output states
+    #model.conv1.register_forward_hook(out_hook)
+    model.to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
@@ -148,10 +153,11 @@ def main():
         train(args, model, device, train_loader, optimizer, epoch)
         test(model, device, test_loader)
         scheduler.step()
+        torch.save(model.state_dict(),
+                   f'data/models/mnist/model_mnist_{epoch:02}.pt')
 
     if args.save_model:
         torch.save(model.state_dict(), "mnist_cnn.pt")
-
 
 if __name__ == '__main__':
     main()

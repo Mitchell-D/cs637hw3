@@ -3,9 +3,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class SaveOutput:
+    """ Basic hook class for storing layer states """
+    def __init__(self):
+        self.outputs = []
+    def __call__(self, module, module_in, module_out):
+        self.outputs.append(module_out)
+    def clear(self):
+        self.outputs = []
+
 class CNNNet(nn.Module):
-    """
-    """
+    """ """
     def __init__(self):
         super(CNNNet, self).__init__()
         # Convolutional layers
@@ -67,12 +75,12 @@ class CNNNet(nn.Module):
         14. Dropout (25%)
         15. Feedforward layer: (B, 10)
         """
-        x = self.pool(F.elu(self.conv1(x)))
-        x = self.pool(F.elu(self.conv2(x)))
-        x = self.pool(F.elu(self.conv3(x)))
+        self.conv1_out = F.elu(self.conv1(x))
+        self.conv2_out = F.elu(self.conv2(self.pool(self.conv1_out)))
+        self.conv3_out = F.elu(self.conv3(self.pool(self.conv2_out)))
 
         # Flatten the image
-        x = x.view(-1, 64*4*4)
+        x = self.pool(self.conv3_out).view(-1, 64*4*4)
         x = self.dropout(x)
         x = F.elu(self.fc1(x))
         x = self.dropout(x)
@@ -119,11 +127,11 @@ class Net(nn.Module):
         11. Feedforward layer: (B, 10)
         12. Softmax activation
         """
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, kernel_size=2)
+        #self.conv1_out = self.conv1(x)
+        self.conv1_out = F.relu(self.conv1(x))
+        self.conv2_out = F.relu(self.conv2(self.conv1_out))
+
+        x = F.max_pool2d(self.conv2_out, kernel_size=2)
         x = self.dropout1(x)
         x = torch.flatten(x, start_dim=1)
         x = self.fc1(x)
