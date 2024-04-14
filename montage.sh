@@ -1,14 +1,14 @@
 #!/usr/bin/bash
 
-epochs=14
-outfile="cifar10_"
+#epochs=14
+epochs=25
 imgdir="figures/activations/"
-#outdir="figures/cifar10_L2/"
-outdir="figures/mnist_L2/"
-dataset="mnist"
+outdir="figures/cifar10_L2/"
+#outdir="figures/mnist_L2/"
+dataset="cifar10"
 layer=2
-tilesize="96x96"
-gridsize="8x8"
+tilesize="64x64"
+gridsize="4x8"
 
 for epoch in $(seq -f "%02g" 0 `expr $epochs - 1`);
 do
